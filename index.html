@@ -49,9 +49,9 @@
         gsap.registerPlugin(ScrollTrigger);
 
         // Update ScrollTrigger based on Lenis scroll position
-        lenis.on('scroll', () => {
-            ScrollTrigger.update();
-        });
+        // lenis.on('scroll', () => {
+        //     ScrollTrigger.update();
+        // });
 
         const canvas = document.querySelector('canvas');
         const context = canvas.getContext('2d'); // it used to draw stuff in canvas

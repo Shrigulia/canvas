@@ -4,144 +4,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scroll main</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>scroll debug</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@3.5.4/dist/locomotive-scroll.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0 !important;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+        }
+
+        #main {
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #page {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+
+        #page1 {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+
+        #page2 {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+
+        #page3 {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+
+        canvas {
+            max-width: 100vw;
+            max-height: 100vh;
+            position: relative;
+            z-index: 9;
+        }
+    </style>
 </head>
 
 <body>
 
-    <div class="w-full bg-zinc-900">
-        <div class="parent relative top-0 left-0 w-full h-[700vh]">
-            <div class="w-full canvasParent h-screen sticky top-0 left-0">
-                <canvas class="w-full h-screen" id="frame"></canvas>
-            </div>
+    <div id="main">
+        <div id="page">
+            <canvas></canvas>
         </div>
+        <div id="page1"></div>
+        <div id="page2"></div>
+        <div id="page3"></div>
     </div>
 
 
-    <!-- <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@latest/bundled/lenis.js"></script> -->
-<!--     <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@latest"></script> -->
+
+    <!-- scripts plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@3.5.4/dist/locomotive-scroll.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
         integrity="sha512-7eHRwcbYkK4d9g/6tD/mhkf++eoTHwpNM9woBxtPUBWm67zeAfFC+HrdoE2GanKeocly/VxeLvIqwvCdk7qScg=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"
         integrity="sha512-onMTRKJBKz8M1TnqqDuGBlowlH0ohFzMXYRNebz+yOcc5TQr/zAKsthzhuv0hiyUKEiQEQXEynnXCvNTOk50dg=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <script>
-        // const lenis = new Lenis({
-        //     duration: 2, // Set your desired scroll duration
-        //     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Custom easing function
-        //     direction: 'vertical', // Can be 'vertical' or 'horizontal'
-        //     gestureDirection: 'vertical', // Controls which gestures are allowed
-        //     smooth: true, // Enable/Disable smooth scrolling
-        //     smoothTouch: false, // Enable/Disable smooth touch scrolling
-        //     touchMultiplier: 2, // Increase/Decrease touch scroll speed
-        // });
+        function locomotive() {
+            gsap.registerPlugin(ScrollTrigger);
 
-        // function raf(time) {
-        //     lenis.raf(time);
-        //     requestAnimationFrame(raf);
-        // }
+            const locoScroll = new LocomotiveScroll({
+                el: document.querySelector("#main"),
+                smooth: true,
+            });
+            locoScroll.on("scroll", ScrollTrigger.update);
 
-        // requestAnimationFrame(raf);
+            ScrollTrigger.scrollerProxy("#main", {
+                scrollTop(value) {
+                    return arguments.length
+                        ? locoScroll.scrollTo(value, 0, 0)
+                        : locoScroll.scroll.instance.scroll.y;
+                },
 
-        // Register GSAP ScrollTrigger plugin
-        gsap.registerPlugin(ScrollTrigger);
+                getBoundingClientRect() {
+                    return {
+                        top: 0,
+                        left: 0,
+                        width: window.innerWidth,
+                        height: window.innerHeight,
+                    };
+                },
 
-        // Update ScrollTrigger based on Lenis scroll position
-        // lenis.on('scroll', () => {
-        //     ScrollTrigger.update();
-        // });
+                pinType: document.querySelector("#main").style.transform
+                    ? "transform"
+                    : "fixed",
+            });
+            ScrollTrigger.addEventListener("refresh", () => locoScroll.update());
+            ScrollTrigger.refresh();
+        }
+        locomotive();
 
         const canvas = document.querySelector('canvas');
-        const context = canvas.getContext('2d'); // it used to draw stuff in canvas
+        const context = canvas.getContext('2d');
+        // console.log(context);
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', function () {
+            canvas.width = this.innerWidth
+            canvas.height = this.innerHeight
+            // render();
+        });
 
         const frames = {
             currentIndex: 0,
             maxIndex: 382
         };
-
-        // track to keep loaded images
-        let loadedImages = 0;
-
         const images = [];
+        const imageSeq = {
+            frame: 1
+        }
 
-        function preloadImages() {
-            for (var i = 0; i < frames.maxIndex; i++) {
-                // creating img url
+        function files(index) {
+            var data = ``;
+            for (let i = 0; i <= frames.maxIndex; i++) {
                 const imgUrl = `./frames/frame_${(i + 1).toString().padStart(4, '0')}.jpg`;
-
-                // createing new img tag
-                const img = new Image();
-
-                //setting src for every img 
-                img.src = imgUrl
-
-                // this function run on every img load
-                img.onload = () => {
-                    // updating loaded image track
-                    loadedImages++;
-
-                    if (loadedImages === frames.maxIndex) {
-                        loadImage(frames.currentIndex);
-                        startAnimation();
-                        console.log('all images loaded');
-                    }
-
-                    // pushing images 
-                    images.push(img)
-                }
-                // console.log(img);
+                data += `${imgUrl} \n`;
             }
+            return data.split('\n')[index];
         };
 
-        function loadImage(index) {
-            if (index >= 0 && index <= frames.maxIndex) {
-                // loading the current loaded index image
-                const img = images[index];
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+        for (var i = 0; i <= frames.maxIndex; i++) {
+            const img = new Image();
+            img.src = files(i - 1);
+            images.push(img);
+        };
 
-                const scaleX = canvas.width / img.width;
-                const scaleY = canvas.height / img.height;
-                const scale = Math.max(scaleX, scaleY);
+        gsap.to(imageSeq, {
+            frame: frames.maxIndex - 1,
+            snap: 'frame',
+            ease: 'none',
+            scrollTrigger: {
+                scrub: 0.15,
+                trigger: '#page>canvas',
+                start: 'top top',
+                end: '600% top',
+                markers: true,
+                scroller: '#main'
+            },
+            onUpdate: render
+        });
 
-                const newWidth = img.width * scale;
-                const newHeight = img.height * scale;
+        images[1].onload = render;
 
-                // to center the image in canvas
-                const offsetX = (canvas.width - newWidth) / 2;
-                const offsetY = (canvas.height - newHeight) / 2;
+        function render() {
+            scaleImage(images[imageSeq.frame], context);
+        };
 
-                context.clearRect(0, 0, canvas.width, canvas.height);
-                context.imageSmoothingEnabled = true;
-                context.imageSmoothingQuality = 'high';
-                context.drawImage(img, offsetX, offsetY, newWidth, newHeight);
+        function scaleImage(img, ctx) {
 
-                frames.currentIndex = index;
+            var canvas = ctx.canvas;
+            var hRatio = canvas.width / img.width;
+            var vRatio = canvas.height / img.height;
+            var ratio = Math.max(hRatio, vRatio);
+            var centerShift_x = (canvas.width - img.width * ratio);
+            var centerShift_y = (canvas.height - img.height * ratio);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(
+                img,
+                0,
+                0,
+                img.width,
+                img.height,
+                centerShift_x,
+                centerShift_y,
+                img.width * ratio,
+                img.height * ratio
+            );
+        };
+
+        ScrollTrigger.create({
+            trigger: "#page>canvas",
+            pin: true,
+            markers: true,
+            scroller: '#main',
+            start: 'top top',
+            end: '600% top'
+        });
+
+        gsap.to("#page1", {
+            scrollTrigger: {
+                trigger: '#page1',
+                start: 'top top',
+                end: 'bottom top',
+                pin: true,
+                // markers: true,
+                scroller: '#main'
             }
-        }
+        })
+        gsap.to("#page2", {
+            scrollTrigger: {
+                trigger: '#page2',
+                start: 'top top',
+                end: 'bottom top',
+                pin: true,
+                // markers: true,
+                scroller: '#main'
+            }
+        })
+        gsap.to("#page3", {
+            scrollTrigger: {
+                trigger: '#page3',
+                start: 'top top',
+                end: 'bottom top',
+                pin: true,
+                // markers: true,
+                scroller: '#main'
+            }
+        })
 
-        function startAnimation() {
 
-            var tl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: '.parent',
-                    start: 'top top',
-                    scrub: 0.5,
-                    markers: true
-                }
-            });
 
-            tl.to(frames, {
-                currentIndex: frames.maxIndex,
-                onUpdate: function () {
-                    loadImage(Math.floor(frames.currentIndex));
-                }
-            })
-        }
-
-        preloadImages();
     </script>
 </body>
 
